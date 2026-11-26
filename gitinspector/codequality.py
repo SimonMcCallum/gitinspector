@@ -30,9 +30,10 @@ The same measures are then taken per chunk, where a chunk is what one author add
 one commit, so that the polish of each piece of work can be compared with the author's own usual.
 A chunk that is far more polished than the rest of what the author wrote, and that carries the
 marks of generated code (full typing, a doc comment on every function, sentence-case explanatory
-comments, long descriptive names, nothing left over), is flagged as likely AI-assisted. That is a
-heuristic and the report says so: it gives the ratio of good, fair and poor code and a list of
-places worth asking about, not a verdict."""
+comments, long descriptive names, nothing left over), is noted as likely AI-assisted. Using
+generated code is allowed, so the note is information only: it does not lower the score, and it
+is not a concern or a question for the author. The report gives the ratio of good, fair and poor
+code and lists where the generated-looking chunks are."""
 
 from __future__ import division
 from __future__ import unicode_literals

@@ -31,9 +31,9 @@ QUALITY_NOTE_TEXT = N_("Scores run 0 to 100 and are made of clarity (naming, com
                        "(function length, nesting, branching), robustness (typing, checks) and hygiene (no debug prints, "
                        "magic numbers, commented-out or duplicated code). Good, fair and poor are shares of the author's "
                        "code lines by the polish of the chunk they were added in. Polished is the share in chunks that "
-                       "carry the marks of generated code; it is a heuristic, not a detector, and a prompt for a question, "
-                       "not a verdict.")
-FLAGGED_TEXT = N_("Chunks well above the author's usual polish")
+                       "carry the marks of generated or AI-assisted code. It is a heuristic, noted for information only: "
+                       "generated code is allowed and does not count against the score.")
+FLAGGED_TEXT = N_("Chunks that look generated or AI-assisted (noted only, allowed)")
 NO_SCRIPTS_TEXT = N_("No script lines were found to rate")
 WHAT_TEXT = N_("What")
 DASH = "-"
@@ -76,7 +76,7 @@ class CodeQualityOutput(Outputable):
 		print("")
 		terminal.printb(terminal.ljust(_("Author"), 21) + terminal.rjust(_("Good%"), 6) + terminal.rjust(_("Fair%"), 6) +
 		                terminal.rjust(_("Poor%"), 6) + terminal.rjust(_("Polished%"), 10) + terminal.rjust(_("Chunks"), 7) +
-		                terminal.rjust(_("Flagged"), 8))
+		                terminal.rjust(_("AI-like"), 8))
 		for author in sorted(authors):
 			ratios = self.data.ratios.get(author, {})
 			print(terminal.ljust(author, 20)[0:20 - terminal.get_excess_column_count(author)], end=" ")

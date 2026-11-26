@@ -142,9 +142,10 @@ Rules:
 - When contribution_focus is given, say where each person's work went (scripts, shaders, scenes the editor wrote,
   docs, assets) and weigh scripts and shaders above scene and asset churn when judging programming effort.
 - When code_quality is given, describe each author's code level from the sub-scores (clarity, structure, robustness,
-  hygiene) and the good/fair/poor ratio, and report the polished share and the flagged chunks as "looks generated or
-  AI-assisted". That is allowed in this course and is not misconduct; the point is the ratio of polished to rough code
-  per person and what to ask them about, never an accusation.
+  hygiene) and the good/fair/poor ratio, and note the polished share and the flagged chunks as "looks generated or
+  AI-assisted". Using AI-generated code is allowed in this course. Mention the share as a neutral fact only: never
+  list it under concerns, risks or questions, never suggest asking anyone about it, and never let it lower your view
+  of a person's contribution.
 - Write in plain, neutral British English. No headings inside the fields, no bullet characters inside strings.
 - Answer with a single JSON object that matches the schema you were given, and nothing else."""
 

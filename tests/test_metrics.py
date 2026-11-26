@@ -28,6 +28,10 @@ except ImportError:
 from gitinspector.metrics import MetricsLogic
 from .harness import Repository, analyze_changes, analyze_metrics
 
+GDSCRIPT_CYCLOMATIC = 21
+GDSCRIPT_CODE_LINES = 27
+GDSCRIPT_COGNITIVE = 9
+
 def lines_of(sample):
 	with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "resources", sample), "rb") as source:
 		return MetricsLogic.decode_lines(source)
@@ -63,6 +67,13 @@ class GroovyMetricsTest(unittest.TestCase):
 class DartMetricsTest(unittest.TestCase):
 	def test_switch_expression_arms_and_arrow_functions_are_not_counted_as_branches(self):
 		self.assertEqual(measure("metrics_sample.dart", "dart"), (22, 44))
+
+class GDScriptMetricsTest(unittest.TestCase):
+	def test_branches_and_exits_are_counted_and_match_arms_and_words_are_not(self):
+		self.assertEqual(measure("metrics_sample.gd", "gd"), (GDSCRIPT_CYCLOMATIC, GDSCRIPT_CODE_LINES))
+
+	def test_nesting_is_charged_in_cognitive_complexity(self):
+		self.assertEqual(cognitive("metrics_sample.gd", "gd"), GDSCRIPT_COGNITIVE)
 
 class PhpMetricsTest(unittest.TestCase):
 	def test_elseif_and_string_cases_are_counted_once(self):

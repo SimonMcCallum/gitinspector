@@ -55,6 +55,17 @@ def gnu_getopt(args, options, long_options):
 
 	return getopt.gnu_getopt(args, options, long_options)
 
+def get_positive_integer_argument(arg):
+	try:
+		value = int(arg)
+	except (TypeError, ValueError):
+		value = 0
+
+	if value <= 0:
+		raise InvalidOptionArgument(_("The given option argument is not a positive integer."))
+
+	return value
+
 def get_boolean_argument(arg):
 	if isinstance(arg, bool):
 		return arg

@@ -25,7 +25,8 @@ from . import comment, filtering, git, interval, workers
 
 __metric_eloc__ = {"java": 500, "c": 500, "cpp": 500, "cs": 500, "h": 300, "hpp": 300, "php": 500, "py": 500, "glsl": 1000,
                    "rb": 500, "js": 500, "sql": 1000, "xml": 1000, "go": 500, "swift": 500, "ts": 500, "tsx": 500,
-                   "rs": 500, "groovy": 500, "dart": 500}
+                   "rs": 500, "groovy": 500, "dart": 500, "gd": 500, "gdshader": 1000, "gdshaderinc": 1000, "hlsl": 1000,
+                   "shader": 1000, "usf": 1000, "ush": 1000}
 
 __metric_cc_tokens__ = [[["java", "js", "c", "cc", "cpp", "ts", "tsx"], ["else", r"for\s+\(.*\)", r"if\s+\(.*\)",
                                                                    r"case\s+\w+:", "default:", r"while\s+\(.*\)"],
@@ -35,6 +36,14 @@ __metric_cc_tokens__ = [[["java", "js", "c", "cc", "cpp", "ts", "tsx"], ["else",
                                 ["assert", "break", "continue", "return"]],
                        [["py"], [r"^\s+elif .*:$", r"^\s+else:$", r"^\s+for .*:", r"^\s+if .*:$", r"^\s+while .*:$"],
                                 [r"^\s+assert", "break", "continue", "return"]],
+                       #GDScript reads like Python; the arms of a match are left uncounted, as a line that ends
+                       #in a colon is just as often a property with a setter.
+                       [["gd"], [r"^\s+elif\b.*:\s*$", r"^\s+else\s*:\s*$", r"^\s+for\b.*:\s*$", r"^\s+if\b.*:\s*$",
+                                 r"^\s+while\b.*:\s*$", r"^\s+match\b.*:\s*$"],
+                                [r"^\s+assert", r"\bbreak\b", r"\bcontinue\b", r"\breturn\b"]],
+                       [["gdshader", "gdshaderinc", "hlsl", "shader", "usf", "ush"],
+                        [r"\belse\b", r"\bfor\s*\(.*\)", r"\bif\s*\(.*\)", r"\bcase\s+.*:", r"\bdefault\s*:", r"\bwhile\s*\(.*\)"],
+                        [r"\bbreak\b", r"\bcontinue\b", r"\breturn\b", r"\bdiscard\b"]],
                        [["go"], ["else", r"for\s+.*\{", r"if\s+.*\{", r"case\s+\w+:", "default:", r"goto\s+\w+"],
                                 ["break", "continue", "return"]],
                        [["swift"], [r"\belse\b", r"\bfor\s+.*\{", r"\bif\s+.*\{", r"\bcase\s+.*:", r"\bdefault\s*:", r"\bwhile\s+"],
@@ -63,6 +72,11 @@ __metric_cognitive_tokens__ = [[["java", "js", "c", "cc", "cpp", "ts", "tsx", "c
                                 [r"\belse\b"]],
                                [["py"], [r"\bif\s+.*:", r"\bfor\s+.*:", r"\bwhile\s+.*:", r"\bexcept\b"],
                                         [r"\belif\b", r"\belse\b"]],
+                               [["gd"], [r"\bif\s+.*:", r"\bfor\s+.*:", r"\bwhile\s+.*:", r"\bmatch\s+.*:"],
+                                        [r"\belif\b", r"\belse\b"]],
+                               [["gdshader", "gdshaderinc", "hlsl", "shader", "usf", "ush", "glsl"],
+                                [r"\bif\s*\(", r"\bfor\s*\(", r"\bwhile\s*\(", r"\bswitch\s*\("],
+                                [r"\belse\b"]],
                                [["go"], [r"\bif\s+.*\{", r"\bfor\b.*\{", r"\bswitch\b.*\{", r"\bselect\s*\{"],
                                         [r"\belse\b"]],
                                [["swift"], [r"\bif\s+.*\{", r"\bfor\s+.*\{", r"\bwhile\s+.*\{", r"\bswitch\s+.*\{",

@@ -18,14 +18,36 @@ A full [Documentation](https://github.com/ejwa/gitinspector/wiki/Documentation) 
 
 ### Some of the features
   * Shows cumulative work by each author in the history.
-  * Filters results by extension (default: java,c,cc,cpp,h,hh,hpp,php,py,glsl,rb,js,sql,go,swift,ts,tsx,rs,groovy).
+  * Filters results by extension (default: java,c,cc,cpp,h,hh,hpp,php,py,glsl,rb,js,sql,go,swift,ts,tsx,rs,groovy,gd,gdshader,gdshaderinc,cs,hlsl,shader,usf,ush).
+  * Knows the game engines: GDScript and gdshader (Godot), C# (Godot, Unity) and the Unity and Unreal shader languages get comment recognition and complexity metrics.
+  * Shows where each author's changes went (`--focus`): scripts, shaders, editor-written scenes, docs, data, assets, generated files.
+  * Rates the script lines each author owns (`--code-quality`): typing, naming, documentation, function length, nesting, debug prints, magic numbers, duplication, with a level band and the share of code that looks polished enough to have been generated.
   * Can display a statistical timeline analysis.
   * Scans for all filetypes (by extension) found in the repository.
   * Multi-threaded; uses multiple instances of git to speed up analysis when possible.
   * Supports HTML, JSON, XML and plain text output (console).
   * Generates responsive HTML reports with a light and a dark mode, sortable tables and a search box, that work on phones as well.
   * Can report violations of different code metrics.
+  * Joins the issues and milestones of a GitLab project to the commits (who planned, who was assigned, who committed).
+  * Can have a language model, local or Claude, write an assessment from the statistics.
   * Runs on Python 2.7 and on Python 3.5 and later; see [docs/REQUIREMENTS.txt](docs/REQUIREMENTS.txt) for the supported versions.
+
+### Contribution focus and code level
+`--focus` (`-C`) puts every changed file of every commit in a category by extension and path, so the report says where an author's lines went: scripts, shaders, scenes the editor wrote, docs, data, config, and separately how many asset and generated files they touched. Shares are of authored lines only, so the member who committed the asset pack no longer looks like the lead programmer.
+
+`--code-quality` (`-Q`) reads the script lines git blame gives each author (GDScript, C#, Python, JavaScript and TypeScript, the shader languages, C and C++) and rates them: typed parameters and returns, naming against the language's convention, documented functions, median function length, nesting, branches per function, debug prints, magic numbers, commented-out code, long lines, duplicated lines, safety checks. Four sub-scores (clarity, structure, robustness, hygiene) make one score and a level band (beginning, developing, competent, strong). The same measures are taken per chunk, one author's lines in one file from one commit, which gives the share of each author's code that is good, fair or poor, and flags chunks that are well above that author's usual polish and carry the marks of generated code: full typing, a doc comment on every function, sentence-case explanatory comments, long descriptive names, nothing left over, one large commit. The flag is a heuristic and a prompt for a question, not a verdict. Both are part of `--grading`.
+
+### GitLab issues, milestones and a written assessment
+Two additions aimed at grading. `--gitlab` reads the issues and the milestones of the GitLab project behind the origin remote (or `--gitlab-url`, or an offline `--gitlab-dump` of the API objects) and joins them to the commits: who raised the issues, who was assigned, who committed against which issue, which milestones held and which are overdue. A personal access token with the `read_api` scope goes in `--gitlab-token`, `$GITLAB_TOKEN` or the git config `inspector.gitlab-token`. Students who commit from a personal address are matched to their GitLab account by address, name and name tokens; `--gitlab-aliases=FILE` (a JSON object of address or name to username) settles the ones that are not, and the same matching merges the rows of the focus and code quality sections, so a student who committed under four names gets one row.
+
+`--llm=BACKEND` then has a language model write an assessment from the statistics in the report, never from the source. Three backends: `local` for any OpenAI-compatible server on the machine (Ollama, LM Studio, llama.cpp; `--llm-url`, default `http://localhost:11434/v1`), `claude` for the Anthropic API (`pip install anthropic`; `ANTHROPIC_API_KEY` or an `ant auth login` profile), and `claude-code` for the `claude` command line tool on a Claude subscription. `--llm-model` picks the model and `--llm-prompt=FILE` adds the rubric of the course. The assessment lands at the end of every output format, marked as written by a model, so it can be checked against the tables above it.
+
+```
+gitinspector --grading --gitlab --llm=local --llm-model=llama3.1 -F html > report.html
+gitinspector --grading --gitlab-dump=team1.json --llm=claude-code --llm-prompt=rubric.txt
+```
+
+Every option can also be set once in the git config as `inspector.gitlab`, `inspector.gitlab-url`, `inspector.gitlab-token`, `inspector.gitlab-dump`, `inspector.gitlab-aliases`, `inspector.llm`, `inspector.llm-model`, `inspector.llm-url` and `inspector.llm-prompt`.
 
 ### Example outputs
 Below are some example outputs for a number of famous open source projects, as well as for gitinspector itself. All the statistics were generated using the *"-HTlrm"* flags.

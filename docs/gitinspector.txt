@@ -32,13 +32,19 @@ List information about the repository in REPOSITORY. If no repository is specifi
 Mandatory arguments to long options are mandatory for short options too. Boolean arguments can only be given to long options.
 
 *-f, --file-types*=EXTENSIONS::
-	A comma separated list of file extensions to include when computing statistics. The default extensions used are: java,c,cc,cpp,h,hh,hpp,php,py,glsl,rb,js,sql,go,swift,ts,tsx,rs,groovy. Specifying a single '\*' asterisk character includes files with no extension. Specifying two consecutive '**' asterisk characters includes all files regardless of extension.
+	A comma separated list of file extensions to include when computing statistics. The default extensions used are: java,c,cc,cpp,h,hh,hpp,php,py,glsl,rb,js,sql,go,swift,ts,tsx,rs,groovy,gd,gdshader,gdshaderinc,cs,hlsl,shader,usf,ush. Specifying a single '\*' asterisk character includes files with no extension. Specifying two consecutive '**' asterisk characters includes all files regardless of extension.
 
 *-F, --format*=FORMAT::
 	Defines in which format output should be generated; the default format is 'text' and the available formats are: html,htmlembedded,json,text,xml (see <<X1,*OUTPUT FORMATS*>>)
 
 *--grading*[=BOOL]::
-	Show statistics and information in a way that is formatted for grading of student projects; this is the same as supplying the options *-HlmrTw*
+	Show statistics and information in a way that is formatted for grading of student projects; this is the same as supplying the options *-HlmrTwCQ*
+
+*-C, --focus*[=BOOL]::
+	Show where each author's changes went: scripts, shaders, scenes the editor writes, docs, data, config, and separately the asset and generated files they touched. Shares are of authored lines only
+
+*-Q, --code-quality*[=BOOL]::
+	Read the script lines git blame gives each author and rate them: typed parameters and returns, naming against the language's convention, documented functions, median function length, nesting, branches per function, debug prints, magic numbers, commented-out code, long lines, duplicated lines and safety checks. Four sub-scores (clarity, structure, robustness, hygiene) make one score and a level band. The same measures per chunk, one author's lines in one file from one commit, give the share of each author's code that is good, fair or poor, and flag chunks well above that author's usual polish that carry the marks of generated code. The flag is a heuristic and a prompt for a question, not a verdict
 
 *-H, --hard*[=BOOL]::
 	Track lines and look for duplicates harder; this can be quite slow with big repositories
@@ -72,6 +78,39 @@ Mandatory arguments to long options are mandatory for short options too. Boolean
 
 *-x, --exclude*=PATTERN::
 	An exclusion pattern describing the file paths, revisions, revisions with certain commit messages, author names or author emails that should be excluded from the statistics; can be specified multiple times (see <<X2,*FILTERING*>>)
+
+*--gitlab*[=BOOL]::
+	Fetch the issues and milestones of the GitLab project behind the origin remote and join them to the commits: who raised the issues, who was assigned, who committed against which, which milestones held and which are overdue
+
+*--gitlab-url*=URL::
+	The GitLab project to read instead of the one inferred from the origin remote
+
+*--gitlab-token*=TOKEN::
+	A personal access token with the read_api scope; the GITLAB_TOKEN environment variable and the git config inspector.gitlab-token are read as well
+
+*--gitlab-dump*=FILE::
+	Read the issues and milestones from a JSON dump of the API objects instead of the API
+
+*--gitlab-aliases*=FILE::
+	A JSON file mapping commit e-mail addresses or author names to GitLab usernames, for students who commit from a personal address. Also merges the rows of the focus and code quality sections, so a student who committed under several names gets one row
+
+*--llm*=BACKEND::
+	Have a language model write an assessment of the statistics in the report; BACKEND is one of none, local, claude, claude-code. 'local' is any OpenAI-compatible server such as Ollama or LM Studio, 'claude' the Anthropic API (the anthropic package, with ANTHROPIC_API_KEY or an ant auth login profile), 'claude-code' the Claude Code command line tool on a subscription. The model only sees the evidence pack built from the report, never the source
+
+*--llm-model*=NAME::
+	The model the backend should use
+
+*--llm-url*=URL::
+	The base URL of the local model server; the default is http://localhost:11434/v1
+
+*--llm-prompt*=FILE::
+	A file with extra instructions for the model, such as the rubric of the course
+
+*--llm-max-tokens*=N::
+	The longest answer the model may write
+
+*--llm-timeout*=SECONDS::
+	How long to wait for the model
 
 *-h, --help*::
 	Display help and exit

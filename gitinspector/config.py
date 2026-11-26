@@ -20,7 +20,7 @@
 from __future__ import unicode_literals
 import os
 import subprocess
-from . import extensions, filtering, format, interval, optval
+from . import extensions, filtering, format, interval, llm, optval
 
 class GitConfig(object):
 	def __init__(self, run, repo, global_only=False):
@@ -85,6 +85,25 @@ class GitConfig(object):
 
 		self.run.timeline = self.__read_git_config_bool__("timeline")
 
+		self.run.focus = self.__read_git_config_bool__("focus")
+		self.run.code_quality = self.__read_git_config_bool__("code-quality")
+		self.run.gitlab = self.__read_git_config_bool__("gitlab")
+
+		for (variable, attribute) in (("gitlab-url", "gitlab_url"), ("gitlab-token", "gitlab_token_config"),
+		                              ("gitlab-dump", "gitlab_dump"), ("gitlab-aliases", "gitlab_aliases")):
+			var = self.__read_git_config_string__(variable)
+			if var[0]:
+				setattr(self.run, attribute, var[1])
+
+		var = self.__read_git_config_string__("llm")
+		if var[0]:
+			self.run.llm.backend = llm.select(var[1])
+
+		for (variable, attribute) in (("llm-model", "model"), ("llm-url", "url"), ("llm-prompt", "prompt_file")):
+			var = self.__read_git_config_string__(variable)
+			if var[0]:
+				setattr(self.run.llm, attribute, var[1])
+
 		if self.__read_git_config_bool__("grading"):
 			self.run.hard = True
 			self.run.list_file_types = True
@@ -92,3 +111,5 @@ class GitConfig(object):
 			self.run.responsibilities = True
 			self.run.timeline = True
 			self.run.useweeks = True
+			self.run.focus = True
+			self.run.code_quality = True

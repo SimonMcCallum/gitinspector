@@ -1,3 +1,25 @@
+gitinspector (0.5.2)
+
+	* GDScript, gdshader, C# and the Unity and Unreal shader languages are
+	  analyzed by default and get comment recognition and metrics.
+	* --focus shows where each author's changes went: scripts, shaders,
+	  scenes, docs, data, assets or generated files.
+	* --code-quality rates the script lines each author owns and flags
+	  chunks that are well above the author's usual polish.
+	* The issues and the milestones of a GitLab project can be fetched
+	  with --gitlab (or read from a dump with --gitlab-dump) and are
+	  joined to the commits: who raised the issues, who was assigned,
+	  who committed against which, and whether the milestones held.
+	* Commit authors are matched to GitLab users by address, name and
+	  name tokens, with --gitlab-aliases for the ones that are not.
+	* A language model can write an assessment of the statistics with
+	  --llm; the backends are a local OpenAI-compatible server, the
+	  Anthropic API and the Claude Code command line tool.
+	* The new settings can be kept in the git config as inspector.gitlab,
+	  inspector.gitlab-url, inspector.gitlab-token, inspector.gitlab-dump,
+	  inspector.gitlab-aliases, inspector.llm, inspector.llm-model,
+	  inspector.llm-url and inspector.llm-prompt.
+
 gitinspector (0.5.1)
 
 	* Groovy source files are analyzed by default and get comment

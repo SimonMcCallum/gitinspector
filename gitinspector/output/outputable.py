@@ -19,6 +19,7 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
+import json
 from xml.sax.saxutils import escape
 from .. import format
 
@@ -167,6 +168,37 @@ def html_share(entries, minor_text, minor):
 
 	return ("<div class=\"gi-share\"><div class=\"gi-share-bar\">" + bar + "</div>"
 	        "<div class=\"gi-legend\">" + legend + "</div></div>")
+
+def json_block(value, level):
+	"""json.dumps indented the way the rest of the report is: tabs, one per level."""
+	text = json.dumps(value, ensure_ascii=False, indent=1, sort_keys=True)
+	lines = []
+
+	for line in text.splitlines():
+		stripped = line.lstrip(" ")
+		lines.append("\t" * (level + len(line) - len(stripped)) + stripped)
+
+	return "\n".join(lines)
+
+def xml_element(name, value, level):
+	"""A dict as nested elements, a list as repeated singular elements, anything else as text."""
+	indent = "\t" * level
+
+	if isinstance(value, dict):
+		inner = "".join(xml_element(__xml_name__(key), item, level + 1) for (key, item) in sorted(value.items()))
+		return indent + "<" + name + ">\n" + inner + indent + "</" + name + ">\n"
+	if isinstance(value, (list, tuple)):
+		singular = name[:-1] if name.endswith("s") else "item"
+		inner = "".join(xml_element(singular, item, level + 1) for item in value)
+		return indent + "<" + name + ">\n" + inner + indent + "</" + name + ">\n"
+	if isinstance(value, bool):
+		value = "true" if value else "false"
+
+	return indent + "<" + name + ">" + escape("{0}".format("" if value is None else value)) + "</" + name + ">\n"
+
+def __xml_name__(key):
+	key = "{0}".format(key).replace("_", "-").replace(" ", "-")
+	return key if key[:1].isalpha() else "n" + key
 
 def output(outputable):
 	if format.get_selected() == "html" or format.get_selected() == "htmlembedded":

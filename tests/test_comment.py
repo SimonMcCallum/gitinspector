@@ -43,6 +43,11 @@ def __test_extension__(commented_file, extension):
 
 	return comment_counter
 
+class GDScriptFileTest(unittest.TestCase):
+	def test(self):
+		comment_counter = __test_extension__("/resources/commented_file.gd", "gd")
+		self.assertEqual(comment_counter, 6)
+
 class TexFileTest(unittest.TestCase):
 	def test(self):
 		comment_counter = __test_extension__("/resources/commented_file.tex", "tex")

@@ -19,8 +19,10 @@
 
 from __future__ import unicode_literals
 
+#The engines' own languages are in by default: GDScript and gdshader for Godot, C# for Godot and
+#Unity, the shader languages of Unity and Unreal. Scene files are not source and stay out.
 DEFAULT_EXTENSIONS = ["java", "c", "cc", "cpp", "h", "hh", "hpp", "php", "py", "glsl", "rb", "js", "sql", "go", "swift",
-                      "ts", "tsx", "rs", "groovy"]
+                      "ts", "tsx", "rs", "groovy", "gd", "gdshader", "gdshaderinc", "cs", "hlsl", "shader", "usf", "ush"]
 
 __extensions__ = DEFAULT_EXTENSIONS
 __located_extensions__ = set()

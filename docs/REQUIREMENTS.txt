@@ -8,6 +8,11 @@ library. Besides a Python interpreter it needs:
 
   * The git executable, available in the PATH of the user running it.
 
+The --gitlab options use the standard library as well. Of the --llm backends,
+"local" and "claude-code" need nothing beyond a running model server or the
+claude command line tool; "claude" needs the anthropic package (1.x), which is
+only imported when that backend is chosen.
+
 The "html" output format links the report font from Google Fonts and the
 author avatars from Gravatar, so a generated report is best viewed with
 internet access. The "htmlembedded" format carries everything it needs and can

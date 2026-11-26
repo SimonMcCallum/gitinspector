@@ -22,6 +22,7 @@ from __future__ import unicode_literals
 import sys
 from .extensions import DEFAULT_EXTENSIONS
 from .format import __available_formats__
+from .llm import BACKENDS, DEFAULT_LOCAL_URL
 
 
 __doc__ = _("""Usage: {0} [OPTION]... [REPOSITORY]...
@@ -44,7 +45,16 @@ Boolean arguments can only be given to long options.
       --grading[=BOOL]           show statistics and information in a way that
                                    is formatted for grading of student
                                    projects; this is the same as supplying the
-                                   options -HlmrTw
+                                   options -HlmrTwCQ
+  -C, --focus[=BOOL]             show where each author's changes went: scripts,
+                                   shaders, scenes, docs, data, assets or files
+                                   the engine generates
+  -Q, --code-quality[=BOOL]      read the script lines each author owns and rate
+                                   them: typing, naming, documentation, function
+                                   length, nesting, debug prints, magic numbers,
+                                   duplication; with the share of each author's
+                                   code that looks polished enough to have been
+                                   generated
   -H, --hard[=BOOL]              track lines and look for duplicates harder;
                                    this can be quite slow with big repositories
   -l, --list-file-types[=BOOL]   list all the file extensions available in the
@@ -71,6 +81,33 @@ Boolean arguments can only be given to long options.
                                    commit messages, author names or author
                                    emails that should be excluded from the
                                    statistics; can be specified multiple times
+      --gitlab[=BOOL]            fetch the issues and milestones of the GitLab
+                                   project behind the origin remote and join
+                                   them to the commits (who planned, who was
+                                   assigned, who committed against what)
+      --gitlab-url=URL           the GitLab project to read instead of the one
+                                   inferred from the origin remote
+      --gitlab-token=TOKEN       a personal access token with the read_api
+                                   scope; $GITLAB_TOKEN and the git config
+                                   inspector.gitlab-token are read as well
+      --gitlab-dump=FILE         read the issues and milestones from a JSON
+                                   dump of the API objects instead of the API
+      --gitlab-aliases=FILE      a JSON file mapping commit e-mail addresses
+                                   or author names to GitLab usernames, for
+                                   students who commit from a personal address
+      --llm=BACKEND              have a language model write an assessment of
+                                   the statistics; BACKEND is one of {3}
+                                   ("local" is any OpenAI-compatible server
+                                   such as Ollama or LM Studio, "claude" the
+                                   Anthropic API, "claude-code" the Claude
+                                   Code command line tool on a subscription)
+      --llm-model=NAME           the model the backend should use
+      --llm-url=URL              the base URL of the local model server; the
+                                   default is {4}
+      --llm-prompt=FILE          a file with extra instructions for the model,
+                                   such as the rubric of the course
+      --llm-max-tokens=N         the longest answer the model may write
+      --llm-timeout=SECONDS      how long to wait for the model
   -h, --help                     display this help and exit
       --version                  output version information and exit
 
@@ -82,4 +119,5 @@ gitinspector requires that the git executable is available in your PATH.
 Report gitinspector bugs to gitinspector@ejwa.se.""")
 
 def output():
-	print(__doc__.format(sys.argv[0], ",".join(DEFAULT_EXTENSIONS), ",".join(__available_formats__)))
+	print(__doc__.format(sys.argv[0], ",".join(DEFAULT_EXTENSIONS), ",".join(__available_formats__),
+	                     ",".join(BACKENDS), DEFAULT_LOCAL_URL))

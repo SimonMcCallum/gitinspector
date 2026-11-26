@@ -26,15 +26,21 @@ import sys
 from collections import OrderedDict
 from .blame import Blame
 from .changes import Changes
+from .codequality import CodeQuality
 from .config import GitConfig
+from .focus import Focus
 from .metrics import MetricsLogic
-from . import (basedir, clone, extensions, filtering, format, git, help, interval,
-               localization, optval, terminal, version, workers)
+from . import (basedir, clone, extensions, filtering, format, git, gitlab, help, interval,
+               llm, localization, optval, terminal, version, workers)
 from .output import outputable
 from .output.blameoutput import BlameOutput
 from .output.changesoutput import ChangesOutput
+from .output.codequalityoutput import CodeQualityOutput
 from .output.extensionsoutput import ExtensionsOutput
 from .output.filteringoutput import FilteringOutput
+from .output.focusoutput import FocusOutput
+from .output.gitlaboutput import GitLabOutput
+from .output.llmoutput import LLMOutput
 from .output.metricsoutput import MetricsOutput
 from .output.responsibilitiesoutput import ResponsibilitiesOutput
 from .output.timelineoutput import TimelineOutput
@@ -52,6 +58,43 @@ class Runner(object):
 		self.timeline = False
 		self.useweeks = False
 		self.forcemonths = False
+		self.focus = False
+		self.code_quality = False
+		self.gitlab = False
+		self.gitlab_url = None
+		self.gitlab_token = None
+		self.gitlab_token_config = None
+		self.gitlab_dump = None
+		self.gitlab_aliases = None
+		self.llm = llm.Settings()
+
+	def wants_gitlab(self):
+		return bool(self.gitlab or self.gitlab_url or self.gitlab_dump)
+
+	def __gitlab_data__(self, repo):
+		"""The issues and milestones of the project behind this repository, joined to its history.
+		Runs inside the repository, so the git log and the origin remote are the right ones."""
+		if self.gitlab_dump:
+			data = gitlab.GitLabData.from_dump(self.gitlab_dump)
+		else:
+			data = gitlab.GitLabData.from_api(repo.location, self.gitlab_url, self.gitlab_token)
+
+		if self.gitlab_aliases:
+			data.aliases = gitlab.load_aliases(self.gitlab_aliases)
+		if format.is_interactive_format():
+			terminal.clear_line()
+		return data.join(repo.location)
+
+	def __assessment__(self, repos, changes, blames, metrics, gitlab_data, focus_data=None, quality_data=None):
+		evidence = llm.build_evidence(repos, changes, blames, metrics if self.include_metrics else None,
+		                              gitlab_data, self.useweeks, focus_data, quality_data)
+		if format.is_interactive_format():
+			print(_("Asking {0} for an assessment of the statistics...").format(llm.describe(self.llm)), file=sys.stderr)
+
+		try:
+			return LLMOutput(self.llm, llm.assess(self.llm, evidence))
+		except llm.LLMError as error:
+			return LLMOutput(self.llm, error=error.msg)
 
 	def process(self, repos):
 		localization.check_compatibility(version.__version__)
@@ -64,10 +107,21 @@ class Runner(object):
 		summed_blames = Blame.__new__(Blame)
 		summed_changes = Changes.__new__(Changes)
 		summed_metrics = MetricsLogic.__new__(MetricsLogic)
+		summed_focus = Focus.__new__(Focus)
+		summed_quality = CodeQuality.__new__(CodeQuality)
+		gitlab_data = None
+		#One row per student in the focus and quality sections, however many git identities they used.
+		aliases = gitlab.load_aliases(self.gitlab_aliases) if self.gitlab_aliases else {}
+		resolver = None
 
 		for repo in repos:
 			os.chdir(repo.location)
 			interval.check(repo.name)
+			#The tracker belongs to one project; with several repositories the first one's is used.
+			if self.wants_gitlab() and gitlab_data is None:
+				gitlab_data = self.__gitlab_data__(repo)
+			if resolver is None and (gitlab_data is not None or aliases):
+				resolver = gitlab.make_resolver(gitlab_data.users if gitlab_data is not None else [], aliases)
 			repo = repo if len(repos) > 1 else None
 			changes = Changes(repo, self.hard)
 			summed_blames += Blame(repo, self.hard, self.useweeks, changes)
@@ -76,9 +130,21 @@ class Runner(object):
 			if self.include_metrics:
 				summed_metrics += MetricsLogic()
 
+			if self.focus:
+				summed_focus += Focus(repo, resolver)
+
+			if self.code_quality:
+				summed_quality += CodeQuality(repo, changes, self.hard, resolver)
+
 			__clear_progress__()
 		else:
 			os.chdir(previous_directory)
+
+		assessment = None
+		if self.llm.is_enabled() and summed_changes.get_commits():
+			assessment = self.__assessment__(repos, summed_changes, summed_blames, summed_metrics, gitlab_data,
+			                                 summed_focus if self.focus else None,
+			                                 summed_quality if self.code_quality else None)
 
 		format.output_header(repos)
 		outputable.output(ChangesOutput(summed_changes))
@@ -97,10 +163,22 @@ class Runner(object):
 			if self.responsibilities:
 				outputable.output(ResponsibilitiesOutput(summed_changes, summed_blames))
 
+			if self.focus:
+				outputable.output(FocusOutput(summed_focus))
+
+			if self.code_quality:
+				outputable.output(CodeQualityOutput(summed_quality))
+
+			if gitlab_data is not None:
+				outputable.output(GitLabOutput(gitlab_data))
+
 			outputable.output(FilteringOutput())
 
 			if self.list_file_types:
 				outputable.output(ExtensionsOutput())
+
+			if assessment is not None:
+				outputable.output(assessment)
 
 		format.output_footer()
 		os.chdir(previous_directory)
@@ -145,10 +223,14 @@ def main():
 	repos = []
 
 	try:
-		opts, args = optval.gnu_getopt(argv[1:], "f:F:hHlLmrTwMx:", ["exclude=", "file-types=", "format=",
+		opts, args = optval.gnu_getopt(argv[1:], "f:F:hHlLmrTwMx:QC", ["exclude=", "file-types=", "format=",
 		                                         "hard:true", "help", "list-file-types:true", "localize-output:true",
 		                                         "metrics:true", "responsibilities:true", "since=", "grading:true",
-		                                         "timeline:true", "until=", "version", "weeks:true", "forcemonths:true"])
+		                                         "timeline:true", "until=", "version", "weeks:true", "forcemonths:true",
+		                                         "focus:true", "code-quality:true",
+		                                         "gitlab:true", "gitlab-url=", "gitlab-token=", "gitlab-dump=", "gitlab-aliases=",
+		                                         "llm=", "llm-model=", "llm-url=", "llm-prompt=", "llm-max-tokens=",
+		                                         "llm-timeout="])
 		#Neither of these describes a repository, and looking for one fails outside a working tree.
 		for o, a in opts:
 			if o in("-h", "--help"):
@@ -204,6 +286,16 @@ def main():
 				run.hard = grading
 				run.timeline = grading
 				run.useweeks = grading
+				run.focus = grading
+				run.code_quality = grading
+			elif o == "-C":
+				run.focus = True
+			elif o == "--focus":
+				run.focus = optval.get_boolean_argument(a)
+			elif o == "-Q":
+				run.code_quality = True
+			elif o == "--code-quality":
+				run.code_quality = optval.get_boolean_argument(a)
 			elif o == "-T":
 				run.timeline = True
 			elif o == "--timeline":
@@ -223,14 +315,38 @@ def main():
 					clear_x_on_next_pass = False
 					filtering.clear()
 				filtering.add(a)
+			elif o == "--gitlab":
+				run.gitlab = optval.get_boolean_argument(a)
+			elif o == "--gitlab-url":
+				run.gitlab_url = a
+			elif o == "--gitlab-token":
+				run.gitlab_token = a
+			elif o == "--gitlab-dump":
+				run.gitlab_dump = a
+			elif o == "--gitlab-aliases":
+				run.gitlab_aliases = a
+			elif o == "--llm":
+				run.llm.backend = llm.select(a)
+			elif o == "--llm-model":
+				run.llm.model = a
+			elif o == "--llm-url":
+				run.llm.url = a
+			elif o == "--llm-prompt":
+				run.llm.prompt_file = a
+			elif o == "--llm-max-tokens":
+				run.llm.max_tokens = optval.get_positive_integer_argument(a)
+			elif o == "--llm-timeout":
+				run.llm.timeout = optval.get_positive_integer_argument(a)
 
+		run.gitlab_token = gitlab.resolve_token(run.gitlab_token, run.gitlab_token_config)
 		__check_python_version__()
 		run.process(repos)
 
 	except workers.OutOfResourcesError as error:
 		__clear_progress__()
 		sys.exit(error.msg)
-	except (filtering.InvalidRegExpError, format.InvalidFormatError, optval.InvalidOptionArgument, getopt.error) as exception:
+	except (filtering.InvalidRegExpError, format.InvalidFormatError, optval.InvalidOptionArgument, getopt.error,
+	        gitlab.GitLabError, llm.LLMError) as exception:
 		__clear_progress__()
 		print(sys.argv[0], "\b:", exception.msg, file=sys.stderr)
 		print(_("Try `{0} --help' for more information.").format(sys.argv[0]), file=sys.stderr)
